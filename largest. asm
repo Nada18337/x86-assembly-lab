@@ -1,0 +1,185 @@
+   ;source name  :largest.asm
+   ;version      :1.0
+   ;created data :16/10/2025
+   ;modified data:16/10/2025
+   ; author      :Nada Osama
+   ;description  :This program reads integer array size N and prints out  the largest integer  in the array
+   ;compile      :nasm -f elf32 largest.asm
+   ;link         :i686-linux-gnu-gcc-static largest.o -o largest
+
+        global main
+        extern scanf  ;C standar function
+        extern printf ;C standar funcion
+
+        section .data
+
+ vpmt   db    "Enter a value [%d]:", 0
+ npmt   db    "Enter the value of N:", 0
+ epmt   db    13,10,"Error: the maximum size is %d.", 13, 10, 0
+ rpmt   db    13,10,"The largest value in the array is %d", 13,10, 0
+ ifmt   db    "%d", 0
+
+        section .bss
+
+ xArr   resd  MAXSZ  ; define  an array of  MAXSZ doubleword elements
+ MAXSZ  equ   1000   ; the maximum size of the array
+
+        section .text
+ main:
+
+        push  ebp
+        mov   ebp, esp
+        sub   esp,8  ; allocate 8 bytes for local variables
+
+ %define max  dword[ebp - 4] ; alocal variable
+ %define n    dword[ebp - 8] ; alocal variable
+
+   ;read the value of N
+   ;display a prompt
+         push  npmt
+         call  printf
+         add   esp,4
+   ;scanf("%d",&n);
+
+        lea   eax,n   ;assingn &n to EAX
+        push  eax     ;push &n
+        push  ifmt
+        call  scanf
+        add   esp,8
+   ;check if n exceeds the array boundary
+        mov   eax,n   ;assign n to EAX
+        cmp   eax,MAXSZ  ;compare
+        jg    Error
+
+   ; read n elemets from STDIN (keyboard)
+        push  n        ;pass n
+        push  xArr     ;pass xArr
+        call  ReadInts
+        add   esp,8
+   ;get the largest element
+        push  n        ;pass n
+        push  xArr     ;pass xArr
+        call  LargestElm
+        add   esp,8
+        mov   max,eax  ;store the largest value
+   ;print out the largest value
+         push  max
+         push  rpmt
+         call  printf  ;printf(rpmt,max)
+         add   esp,8
+
+        mov   eax,0    ;return 0
+        jmp   mainDone
+ Error:
+         push  MAXSZ
+         push  epmt
+         call  printf  ;printf(epmt,MAXSZ)
+         add   esp,8
+         mov   eax,1    ;return 1 to indicate an error occured
+ mainDone:
+        mov   esp,ebp
+        pop   ebp
+        ret
+
+ ;Readlnts:
+ ;      Read a set of N integers
+ ;Receives:
+ ;      arr: an integer array where each element is 32-bit signed integer
+ ;        n: array  size
+ ;Returns:
+ ;      nothing.
+ ;Requires:
+ ;      n > 0
+
+ ReadInts:
+ %define  arr   dword[ebp + 8]   ;first parameter
+ %define  n     dword[ebp + 12]  ;second parameter
+
+        push   ebp
+        mov    ebp,esp
+
+        mov    edi,arr           ;edi points to arr[0]
+        mov    ecx,n             ;assing n to ECX
+        mov    edx,1  
+;a counter from 1 to  n
+ rdTop:
+        ;We need  to store the  values of EDI, EDX because
+        ;calling C standard function may alter the contents of
+        ;there registers. Notice , we kept ,in purpose, EDI at the top of the run-time  stack
+
+
+        push   edx               ;store EDX into  stack
+        push   ecx               ;store ECX into  stack
+        push   edi               ;store EDI into  stack
+
+        ;printf(vpmt,edx)
+         push   edx
+         push   vpmt
+         call   printf           ;pirntf may overwrite ECX and EDI
+         add    esp,8
+
+        ;scanf("%d", edi)
+        mov    edi,[esp]         ;restore EDI without popped out
+        push   edi
+        push   ifmt
+        call   scanf
+        add    esp,8
+
+        pop   edi                ;restore  EDI
+        pop   ecx                ;restore  ECX
+        pop   edx                ;restore  EDX
+        add   edi,4              ;move to next element
+        inc   edx                ;edx++
+        loop  rdTop
+
+        mov   ebp, esp
+        pop   ebp
+        ret
+
+ ; LargestElm:
+ ;        this procedure finds  the largest elemen  in a given array
+ ; Receives:
+ ;        arr:an  integer array where each element is 32-bit signened integer
+ ;        n: array size
+ ; Returns:
+ ;        EAX: the largest element in the array "arr"
+ ; Requires:
+ ;        n > 0
+
+ LargestElm:
+ %define arr  dword[ebp + 8]     ;shortcut for parameter
+ %define n    dword[ebp + 12]    ;shortcut for paramete
+
+        push   ebp
+        mov    ebp, esp
+        sub    esp, 4            ;local variable : max
+ %define max  dword [ebp - 4]    ;shortcut for variable
+
+        ;First, we assumethe first element as the laargest element
+        ;i.e., set max =arr[0]
+
+        mov   edi, arr           ;EDI is pointing to the first element
+        mov   ebx, [edi]                         ; assign the content of arr[0] to max
+        mov   max, ebx                   ; We have to ues EBX to transfer form memory to momory
+
+        ;Nowrepreat form element 2 upto the last  element
+        add   edi, 4                     ; EDI is pointing to the second element
+        mov   ecx, n
+        dec   ecx                        ; reduce counter by one
+        ;check if ecx is still > 0
+        jecxz exitLargest
+ rptLargest:
+        mov   eax, [edi]                 ; assign the countof next  elementto EAX
+        cmp   eax, max                   ; compare next value with max
+        jng   nextLargest                ; if  max >= EAX, do nothing and  go to  next  element
+        mov   max, eax                   ; otherwise, assign  EAX to max (to be so far largest)
+ nextLargest:
+        add   edi, 4
+        loop  rptLargest
+
+ exitLargest:
+        ; return max
+        mov   eax, max
+        mov   esp, ebp
+        pop   ebp
+        ret
