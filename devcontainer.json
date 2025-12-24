@@ -1,7 +1,0 @@
-{
-  "name": "x86 Assembly Dev",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "features": {
-    "ghcr.io/devcontainers/features/nasm:1": {}
-  }
-}
