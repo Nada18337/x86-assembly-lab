@@ -1,4 +1,4 @@
-{
+{ 
   "name": "x86 Assembly Dev",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
